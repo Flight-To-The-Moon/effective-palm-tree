@@ -57,6 +57,11 @@ elif ecc==1:
     print("Orbit is parabolic")
 else:
     print("Orbit is hyperbolic")
+#Determining if escape velocity is reached
+if Vc>Vesc:
+    print("Rocket has exceeded escape velocity for the orbit.")
+else:
+    print("Rocket is below escape velocity for the orbit.")
 
 
     
