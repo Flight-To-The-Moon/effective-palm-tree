@@ -5,7 +5,7 @@ r=float(input("Enter Rocket Orbit Radius (km):"))*1000
 m=float(input("Enter Rocket Mass:"))
 Vt=float(input("Enter Tangential Velocity:"))
 Vr=float(input("Enter Radial Velocity:"))
-F_eng=float(input("Enter Burn force provided by engine:"))
+F_eng_mag=float(input("Enter Burn force provided by engine:"))
 t=float(input("Enter the time after which to measure Rocket's speed:"))
 #initial vectors as given by input
 Vt_Vector=np.array([Vt, 0, 0])
@@ -16,23 +16,25 @@ G=6.674*(10**(-11))
 M=float(5.9722*(10**24))
 r_vec=np.array([0,r,0])
 R_Earth=6.371*(10**6)
+crashed=False
 #formulas to claculate stuff:
 V=Vt_Vector+Vr_Vector #Velocity vector
 #Force calculations
 g=G*M/(r**2)
 #Position Calculations
-dt=0.1 #no of updates per second
+dt=0.01 #no of updates per second
 for i in range (int(t/dt)):
     r_updated=np.linalg.norm(Pos)
-    if r_updated<R_Earth:
+    if r_updated<=R_Earth:
         crashed=True
         break
     
     else:
-        
+         F_eng=F_eng_mag*V/(np.linalg.norm(V))
+         a_eng=F_eng/m
          g=G*M/(r_updated**2)
          g_dir=-Pos/r_updated
-         a=g*g_dir 
+         a=a_eng + g*g_dir 
          V=V+a*dt 
          Pos=Pos+V*dt
 if crashed:
@@ -44,7 +46,7 @@ else:
     Angle_rad=np.arctan2(V[1],V[0])
     Angle=np.degrees(Angle_rad)     
     #Orbit type and properties Calculations
-    P=m*V[0] #linear momentum
+    P=m*MagV #linear momentum
     F=m*g #Gravitational force
     h=np.cross(Pos, V)
     magh=np.linalg.norm(h)
@@ -62,7 +64,7 @@ else:
     print("New Position after time", t,":", Pos)
     print("New Angle is (relative to x-axis):", Angle)
     print("Downward force experienced by Rocket:", F)
-    print("Orbital energy is:", e)
+    print("Specific Orbital energy is:", e)
     print("Circular velocity is:", Vc)
     print("Escape Velocity is:", Vesc)
     print("Eccentricity is:", ecc)
@@ -87,7 +89,7 @@ else:
         print("Rocket is in parabolic escape trajectory.")
     else:
         print("Rocket is in hyperbolic escape trajectory.")
-        #checking github verified feature V3
+        
     
 
 
