@@ -9,7 +9,7 @@ Pos=np.array([0,r,0])
 V=np.array([Vt,0,0])
 G=6.674*(10**(-11))
 M=float(5.9722*(10**24))
-dt=0.1 #time step length
+dt=60#time step length
 #graviy function
 def acceleration(Pos):
     g=G*M/(np.linalg.norm(Pos)**2)
@@ -34,8 +34,7 @@ def RK4(Pos, V):
         #final
         Pos_final=Pos_final+(Pos_k1+2*Pos_k2+2*Pos_k3+Pos_k4)*(dt/6)
         V_final=V_final+(V_k1+2*V_k2+2*V_k3+V_k4)*(dt/6)
-        
-    return (Pos_final,V_final)
+        return (Pos_final,V_final)
 #final outputs
 j,l=RK4(Pos,V)
 magl=np.linalg.norm(l)

@@ -1,117 +1,49 @@
 import numpy as np
-#inputs
-planet=str(input("""The program can simulate orbits around:
-Earth,
-Moon,
-Mars,
-Sun,
-and Jupiter
-As isolated bodies in free space (without outside perturbations)
-What planet to orbit?""")).lower()
-r=float(input("Enter Rocket Orbit Radius (km):"))*1000
-m=float(input("Enter Rocket Mass:"))
-Vt=float(input("Enter Tangential Velocity:"))
-Vr=float(input("Enter Radial Velocity:"))
-F_eng_mag=float(input("Enter Burn force provided by engine:"))
-t=float(input("Enter the time after which to measure Rocket's speed:"))
-updates_per_second=float(input("No of updates per second (higher the value more the accuracy but increases load time):")) #no of updates per second
-#Planetary Values
-planets={
-    "earth": {
-        "mass":5.9722*(10**24),
-        "radius":6.371*(10**6)
-    },
-    "moon": {
-        "mass": 7.3476*(10**22),
-        "radius": 1737400
-        },
-    "mars": {
-        "mass": 6.4171*(10**23),
-        "radius": 3389500
-    },
-    "sun": {
-        "mass":  1.98892*(10**30),
-        "radius": 6.957*(10**8)
-    },
-    "jupiter": {
-        "mass": 1.89813*(10**27),
-        "radius": 6.9886*(10**7)
-    }
-}
-        
+import Physics
+from Planets import planets
+import Inputs as inp
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 #initial vectors as given by input
-Vt_Vector=np.array([Vt, 0, 0])
-Vr_Vector=np.array([0, Vr, 0])
-Pos=np.array([0, r, 0])
+Vt_Vector=np.array([inp.Vt, 0, 0])
+Vr_Vector=np.array([0, inp.Vr, 0])
+Pos=np.array([inp.xPos, inp.yPos, 0])
 # known constant values for formulas
-G=6.674*(10**(-11))
-r_vec=np.array([0,r,0])
 crashed=False
-dt=1/updates_per_second
+x=[]
+y=[]
+time=0
+dt=1/inp.updates_per_second
 #formulas to claculate stuff:
 V=Vt_Vector+Vr_Vector #Velocity vector
-
-#Acceleration due to gravity and rocket burns function
-def acc_with_F_eng(Position, V, target_planet):
-    r_mag=np.linalg.norm(Position)
-    g_dir=-Position/r_mag
-    M=planets[target_planet]["mass"]
-    g_mag=G*M/(r_mag**2)
-    F_eng=F_eng_mag*V/(np.linalg.norm(V)) #burn force
-    a_eng=F_eng/m
-    a=g_mag*g_dir+a_eng
-    return a
-
-#pure gravity function (useful for future implementations)
-def acc(Position, target_planet):
-    r_mag=np.linalg.norm(Position)
-    g_dir=-Position/r_mag
-    M=planets[target_planet]["mass"]
-    g_mag=G*M/(r_mag**2)
-    a=g_mag*g_dir
-    return a
-    
-#function to check for crashes
-def crash(Position, planet):
-    r_orbit=np.linalg.norm(Position)
-    r_planet=planets[planet]["radius"]
-    if r_orbit<r_planet:
-        return True
-    return False
-
-#Position and Velocity Calculation function (per timestep)
-def RK4(position, velocity, target_planet):
-    pos_final, V_final=position.copy(), velocity.copy() #initial values
-    #k1
-    pos_k1,V_k1=V_final, acc_with_F_eng(pos_final, V_final, target_planet)
-        
-    #k2
-    pos_k2=V_final+V_k1*(dt/2)
-    V_k2=acc_with_F_eng(pos_final+pos_k1*(dt/2), pos_k2, target_planet)
-        
-    #k3
-    pos_k3=V_final+V_k2*(dt/2)
-    V_k3=acc_with_F_eng(pos_final+pos_k2*(dt/2), pos_k3, target_planet)
-        
-    #k4
-    pos_k4=V_final+V_k3*(dt)
-    V_k4=acc_with_F_eng(pos_final+ pos_k3*(dt), pos_k4, target_planet)
-        
-    #final values after step
-    pos_final=position+(pos_k1+2*pos_k2+2*pos_k3+pos_k4)*(dt/6)
-    V_final=velocity+(V_k1+2*V_k2+2*V_k3+V_k4)*(dt/6)
-    return pos_final, V_final
-    
-#calculating position and velocity (i.e orbit) across given time frame
-Pos1,V1=RK4(Pos, V, planet)
-for i in range (int(t/dt)-1):
-    Pos1,V1=RK4(Pos1, V1, planet)
-    if crash(Pos1, planet):
+if Physics.crash(Pos, inp.planet):
+    Pos1=Pos
+    V1=V
+else:
+    Pos1,V1=Physics.RK4(Pos, V, inp.planet)
+    x.append(Pos1[0]/1000)
+    y.append( Pos1[1]/1000)
+    time+=dt
+for i in range (int(inp.t/dt)-1):
+    if Physics.crash(Pos1, inp.planet):
         print("!!Calculations failed!!. Rocket has crashed into the celestial body!!")
         crashed=True
         break
+    else:
+        Pos1,V1=Physics.RK4(Pos1, V1, inp.planet)
+        x.append(Pos1[0]/1000)
+        y.append( Pos1[1]/1000)
+        time+=dt
 if crashed:
     print()
+    print("Rocket crashed at:", Pos1, "after time", time)
+    plt.plot(x,y)
+    radius = planets[inp.planet]["radius"] / 1000
+    planet = Circle((0, 0), radius, fill=False)
+    ax=plt.gca()
+    ax.add_patch(planet)
+    plt.axis("equal")
+    plt.show()
 else:
     r_updated=np.linalg.norm(Pos1) #final radius    
     #Velocity Magnitude and angles    
@@ -120,13 +52,13 @@ else:
     Angle=np.degrees(Angle_rad)
 
     #Orbit type and properties Calculations
-    P=m*MagV1 #linear momentum
-    g=acc(Pos1, planet)
-    F=m*g #Gravitational force
+    P=inp.m*MagV1 #linear momentum
+    g=Physics.acc(Pos1, inp.planet)
+    F=inp.m*g #Gravitational force
     h=np.cross(Pos1, V1)
     magh=np.linalg.norm(h)
-    L=m*magh #angular momentum
-    u=G*(planets[planet]["mass"])
+    L=inp.m*magh #angular momentum
+    u=Physics.G*(planets[inp.planet]["mass"])
     e=(MagV1**2)/2 + (-u)/r_updated
     ecc=(1+(2*e*(magh**2))/(u**2))**0.5
     Vc=((u)/r_updated)**0.5
@@ -137,7 +69,7 @@ else:
     print("Final Velocity of rocket is:", MagV1)
     print("Angular Momentum of rocket is:", L)
     print("Linear Momentum of Rocket is:", P)
-    print("New Position after time", t,":", Pos1)
+    print("New Position after time", inp.t,":", Pos1)
     print("New Angle is (relative to x-axis):", Angle)
     print("Downward force experienced by Rocket:", F)
     print("Specific Orbital energy is:", e)
@@ -168,8 +100,15 @@ else:
         print("Rocket is in parabolic escape trajectory.")
     else:
         print("Rocket is in hyperbolic escape trajectory.")
+    plt.plot(x,y)
+    radius = planets[inp.planet]["radius"] / 1000
+    planet = Circle((0, 0), radius, fill=False)
+    ax=plt.gca()
+    ax.add_patch(planet)
+    plt.axis("equal")
+    plt.show()
         
-    #nani
+    
 
 
     
