@@ -1,13 +1,21 @@
 import numpy as np
+import Orbit_Map as orb
 import Physics
 from Planets import planets
 import Inputs as inp
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 #initial vectors as given by input
-Vt_Vector=np.array([inp.Vt, 0, 0])
-Vr_Vector=np.array([0, inp.Vr, 0])
-Pos=np.array([inp.xPos, inp.yPos, 0])
+Pos_list={}
+for planet in planets:
+    Pos_list[planet]=planets[planet]["position"]
+Pos=np.array([inp.xPos, inp.yPos, 0])+ planets[inp.planet]["position"]
+planets["rocket"]["position"]=Pos
+rel_Pos= Pos- planets[inp.planet]["position"]
+Vt_Vector=np.array([-rel_Pos[1]/np.linalg.norm(rel_Pos), rel_Pos[0]/np.linalg.norm(rel_Pos), 0])
+Vr_Vector=np.array([rel_Pos[0]/np.linalg.norm(rel_Pos), rel_Pos[1]/np.linalg.norm(rel_Pos), 0])
+Vt_Vector*=inp.Vt
+Vr_Vector*=inp.Vr
 # known constant values for formulas
 crashed=False
 x=[]
@@ -15,45 +23,52 @@ y=[]
 time=0
 dt=1/inp.updates_per_second
 #formulas to claculate stuff:
-V=Vt_Vector+Vr_Vector #Velocity vector
-if Physics.crash(Pos, inp.planet):
+V=Vt_Vector+Vr_Vector + planets[inp.planet]["velocity"]#Velocity vector
+planets["rocket"]["velocity"]=V
+if Physics.crash(Pos):
     Pos1=Pos
     V1=V
+    crashed=True
 else:
-    Pos1,V1=Physics.RK4(Pos, V, inp.planet)
-    x.append(Pos1[0]/1000)
-    y.append( Pos1[1]/1000)
+    Pos_list,V_list=orb.RK4_solar()
+    Pos1=Pos_list["rocket"]
+    V1=V_list["rocket"]
     time+=dt
-for i in range (int(inp.t/dt)-1):
-    if Physics.crash(Pos1, inp.planet):
-        print("!!Calculations failed!!. Rocket has crashed into the celestial body!!")
-        crashed=True
-        break
-    else:
-        Pos1,V1=Physics.RK4(Pos1, V1, inp.planet)
-        x.append(Pos1[0]/1000)
-        y.append( Pos1[1]/1000)
-        time+=dt
+    plot_list={planet: [] for planet in planets}
+    for planet in planets:
+        planets[planet]["position"]= Pos_list[planet]
+        planets[planet]["velocity"]= V_list[planet]
+    for i in range (int(inp.t/dt)-1):
+        if Physics.crash(Pos1):
+            print("!!Calculations failed!!. Rocket has crashed into the celestial body!!")
+            crashed=True
+            break
+        else:
+            Pos_list,V_list=orb.RK4_solar()
+            Pos1=Pos_list["rocket"]
+            V1=V_list["rocket"]
+            time+=dt
+            for planet in planets:
+                planets[planet]["position"]= Pos_list[planet]
+                planets[planet]["velocity"]= V_list[planet]
+                plot_list[planet].append(Pos_list[planet].copy())
 if crashed:
     print()
     print("Rocket crashed at:", Pos1, "after time", time)
-    plt.plot(x,y)
-    radius = planets[inp.planet]["radius"] / 1000
-    planet = Circle((0, 0), radius, fill=False)
-    ax=plt.gca()
-    ax.add_patch(planet)
-    plt.axis("equal")
-    plt.show()
+    orb.animate(plot_list)
 else:
+    Pos1=Pos1-Pos_list[inp.planet]
+    V1=V1-V_list[inp.planet]
     r_updated=np.linalg.norm(Pos1) #final radius    
     #Velocity Magnitude and angles    
     MagV1=np.linalg.norm(V1)
     Angle_rad=np.arctan2(V1[1],V1[0])
+    Angle_Pos=np.arctan2(Pos1[1], Pos1[0])
     Angle=np.degrees(Angle_rad)
 
     #Orbit type and properties Calculations
     P=inp.m*MagV1 #linear momentum
-    g=Physics.acc(Pos1, inp.planet)
+    g=9.8 #temporary value, change it
     F=inp.m*g #Gravitational force
     h=np.cross(Pos1, V1)
     magh=np.linalg.norm(h)
@@ -69,13 +84,14 @@ else:
     print("Final Velocity of rocket is:", MagV1)
     print("Angular Momentum of rocket is:", L)
     print("Linear Momentum of Rocket is:", P)
-    print("New Position after time", inp.t,":", Pos1)
+    print("New Position after time", inp.t,":", Pos1, "corresponding to angle:", Angle_Pos)
     print("New Angle is (relative to x-axis):", Angle)
     print("Downward force experienced by Rocket:", F)
     print("Specific Orbital energy is:", e)
     print("Circular velocity is:", Vc)
     print("Escape Velocity is:", Vesc)
     print("Eccentricity is:", ecc)
+    print("Distance from", inp.planet, "is", r_updated)
 
     #Determining type of orbit
     if ecc==0:
@@ -95,20 +111,12 @@ else:
     
     #checking orbit stability
     if e<0:
-        print("Rocket is bound to earth.")
+        print("Rocket is bound to", inp.planet)
     elif e==0:
         print("Rocket is in parabolic escape trajectory.")
     else:
         print("Rocket is in hyperbolic escape trajectory.")
-    plt.plot(x,y)
-    radius = planets[inp.planet]["radius"] / 1000
-    planet = Circle((0, 0), radius, fill=False)
-    ax=plt.gca()
-    ax.add_patch(planet)
-    plt.axis("equal")
-    plt.show()
-        
-    
+    orb.animate(plot_list)
 
 
     

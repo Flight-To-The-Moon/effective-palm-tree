@@ -15,22 +15,30 @@ def acc_with_F_eng(Position, V, target_planet):
     return a
 
 #pure gravity function (useful for future implementations)
-def acc(Position, target_planet):
-    r_mag=np.linalg.norm(Position)
-    g_dir=-Position/r_mag
-    M=planets[target_planet]["mass"]
-    g_mag=G*M/(r_mag**2)
-    a=g_mag*g_dir
-    return a
+def acc(position1, position2, planet, planet2):
+    position=position2-position1
+    r_mag=np.linalg.norm(position)
+    g_dir=position/r_mag
+    M1=planets[planet]["mass"]
+    M2=planets[planet2]["mass"]
+    a1=(G*M2/(r_mag**2))*g_dir
+    a2=(-G*M1/(r_mag**2))*g_dir
+    return a1, a2
     
 #function to check for crashes
-def crash(Position, planet):
-    r_orbit=np.linalg.norm(Position)
-    r_planet=planets[planet]["radius"]
-    if r_orbit<r_planet:
-        return True
-    else:
-        return False
+def crash(position):
+    for planet in planets:
+        if planet== "rocket":
+            continue
+        crash_position=position-planets[planet]["position"]
+        crash_mag=np.linalg.norm(crash_position)
+        r_planet=planets[planet]["radius"]
+        if crash_mag<=r_planet:
+            print("Crashed with:", planet)
+            return True
+            break
+
+    return False
 
 #Position and Velocity Calculation function (per timestep)
 def RK4(position, velocity, target_planet):

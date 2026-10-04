@@ -1,23 +1,24 @@
 #Planetary Values
-planets={
+import numpy as np
+import Inputs as inp
+planets = {
+    "rocket": {
+        "mass": inp.m,
+        "velocity": np.array([0.0, 0.0, 0.0]),
+        "position": np.array([0.0, 0.0, 0.0]),
+        "radius": 24.0,
+    },
+
     "earth": {
-        "mass":5.9722*(10**24),
-        "radius":6.371*(10**6)
+        "mass": 5.9722e24,
+        "radius": 6.371e6,
+        "velocity": np.array([-11.79, 0.0, 0.0]),
+        "position": np.array([0, 0.0, 0.0]), 
     },
     "moon": {
-        "mass": 7.3476*(10**22),
-        "radius": 1737400
-        },
-    "mars": {
-        "mass": 6.4171*(10**23),
-        "radius": 3389500
-    },
-    "sun": {
-        "mass":  1.98892*(10**30),
-        "radius": 6.957*(10**8)
-    },
-    "jupiter": {
-        "mass": 1.89813*(10**27),
-        "radius": 6.9886*(10**7)
+        "mass":  7.347e22,
+        "radius": 1737400,
+        "velocity": np.array([958.2, 0, 0]),
+        "position": np.array([0, 405500000, 0])
     }
 }
