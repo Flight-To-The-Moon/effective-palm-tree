@@ -3,19 +3,8 @@ from Planets import planets
 import Inputs as inp
 G=6.674*(10**(-11))
 dt=1/inp.updates_per_second
-#Acceleration due to gravity and rocket burns function
-def acc_with_F_eng(Position, V, target_planet):
-    r_mag=np.linalg.norm(Position)
-    g_dir=-Position/r_mag
-    M=planets[target_planet]["mass"]
-    g_mag=G*M/(r_mag**2)
-    F_eng=inp.F_eng_mag*V/(np.linalg.norm(V)) #burn force
-    a_eng=F_eng/inp.m
-    a=g_mag*g_dir+a_eng
-    return a
-
-#pure gravity function (useful for future implementations)
-def acc(position1, position2, planet, planet2):
+#gravity function
+def acc(position1, position2, planet, planet2):       
     position=position2-position1
     r_mag=np.linalg.norm(position)
     g_dir=position/r_mag
@@ -24,6 +13,21 @@ def acc(position1, position2, planet, planet2):
     a1=(G*M2/(r_mag**2))*g_dir
     a2=(-G*M1/(r_mag**2))*g_dir
     return a1, a2
+#Engine burn calculation
+def engine_acc(position, velocity):
+    a_eng_mag=planets["rocket"]["Engine_acceleration"]
+    if a_eng_mag==0:
+        return np.zeros(3)
+    planet=inp.burn_body
+    rel_pos = position["rocket"] - position[planet]
+    rel_vel = velocity["rocket"] - velocity[planet]
+    r_dir = rel_pos / np.linalg.norm(rel_pos)
+    tangent = rel_vel - np.dot(rel_vel, r_dir) * r_dir
+    n = np.linalg.norm(tangent)
+    nr = np.linalg.norm(rel_vel)
+    if n == 0:
+        return np.zeros(3)
+    return inp.burn_dir * a_eng_mag * rel_vel / nr
     
 #function to check for crashes
 def crash(position):
@@ -40,26 +44,18 @@ def crash(position):
 
     return False
 
-#Position and Velocity Calculation function (per timestep)
-def RK4(position, velocity, target_planet):
-    pos_final, V_final=position.copy(), velocity.copy() #initial values
-    #k1
-    pos_k1,V_k1=V_final, acc_with_F_eng(pos_final, V_final, target_planet)
-        
-    #k2
-    pos_k2=V_final+V_k1*(dt/2)
-    V_k2=acc_with_F_eng(pos_final+pos_k1*(dt/2), pos_k2, target_planet)
-        
-    #k3
-    pos_k3=V_final+V_k2*(dt/2)
-    V_k3=acc_with_F_eng(pos_final+pos_k2*(dt/2), pos_k3, target_planet)
-        
-    #k4
-    pos_k4=V_final+V_k3*(dt)
-    V_k4=acc_with_F_eng(pos_final+ pos_k3*(dt), pos_k4, target_planet)
-        
-    #final values after step
-    pos_final=position+(pos_k1+2*pos_k2+2*pos_k3+pos_k4)*(dt/6)
-    V_final=velocity+(V_k1+2*V_k2+2*V_k3+V_k4)*(dt/6)
-    return pos_final, V_final
-    
+def fuel_burner(m_d, m_w, mp, F_eng_mag):
+    dt=1/inp.updates_per_second
+    m_w-=mp*dt
+    m=m_d+m_w
+    if m_w<0:
+        a_eng_mag=0
+        m=m_d
+        empty=True
+    else:
+        a_eng_mag=F_eng_mag/(m+mp*dt)
+        """here +mp is used as the acceleration is calculated
+        before fuel is spent. You cannot burn fuel then calculate acceleration
+        for mass whole fuel was already burnt."""
+        empty=False
+    return m, a_eng_mag, m_w, empty
