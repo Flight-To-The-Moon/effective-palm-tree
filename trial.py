@@ -3,8 +3,6 @@ import Orbit_Map as orb
 import Physics
 from Planets import planets
 import Inputs as inp
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
 #initial vectors as given by input
 Pos_list={}
 for planet in planets:
@@ -26,9 +24,11 @@ dt=1/inp.updates_per_second
 m=inp.m_d+inp.m_w
 m_var=m
 m_w=inp.m_w
+burn_end=0
 #formulas to claculate stuff:
 V=Vt_Vector+Vr_Vector + planets[inp.planet]["velocity"]#Velocity vector
 planets["rocket"]["velocity"]=V
+
 if Physics.crash(Pos):
     Pos1=Pos
     V1=V
@@ -39,29 +39,36 @@ else:
     V1=V_list["rocket"]
     time+=dt
     plot_list={planet: [] for planet in planets}
+    
     for planet in planets:
         planets[planet]["position"]= Pos_list[planet]
         planets[planet]["velocity"]= V_list[planet]
+        
     for i in range (int(inp.t/dt)-1):
         if Physics.crash(Pos1):
             print("!!Calculations failed!!. Rocket has crashed into the celestial body!!")
             crashed=True
             break
         burning= False
+        
         if time>=inp.burn_time:
             m_var, a_eng_mag,m_w, empty=Physics.fuel_burner(inp.m_d, m_w, inp.mp, inp.F_eng_mag)
             planets["rocket"]["mass"]=m_var
             planets["rocket"]["Engine_acceleration"]=a_eng_mag
             burning= not empty
+            if burning:
+                burn_end=time+dt
         Pos_list,V_list=orb.RK4_solar()
         Pos1=Pos_list["rocket"]
         V1=V_list["rocket"]
         time+=dt
+        
         for planet in planets:
             planets[planet]["position"]= Pos_list[planet]
             planets[planet]["velocity"]= V_list[planet]
             plot_list[planet].append(Pos_list[planet].copy())
         burn_flags.append(burning)
+                                    
 if crashed:
     print()
     print("Rocket crashed at:", Pos1, "after time", time)
@@ -91,7 +98,7 @@ else:
     Vesc= (2*(u/r_updated))**0.5
     #Fuel and burn timings
     fuel_spent=m -m_var
-    burn_duration=fuel_spent/inp.mp
+    burn_duration=burn_end-inp.burn_time
     #Outputs
     print("gravity:", g)
     print("Final Velocity of rocket is:", MagV1)

@@ -5,6 +5,7 @@ from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
+
 def solar_system(position, velocity):
     
     a_dict = {}
@@ -32,6 +33,12 @@ def RK4_solar():
     positions={}
     velocities={}
     dt=1/inp.updates_per_second
+    mass_loss=planets["rocket"].get("mass_loss", 0)
+    a_eng_mag=planets["rocket"]["Engine_acceleration"]
+    m_end=planets["rocket"]["mass"]
+    def eng_scale(s):
+        return((m_end+mass_loss)/(m_end+mass_loss*(1-s)))
+    
     for planet in planets:
         velocities[planet]=planets[planet]["velocity"].copy()
         positions[planet]=planets[planet]["position"].copy()
@@ -51,6 +58,7 @@ def RK4_solar():
     v2={}
     for planet in planets:
         p2[planet]=velocities[planet]+ v1[planet]*(dt/2)
+    planets["rocket"]["Engine_acceleration"]=a_eng_mag*eng_scale(0.5)
     a2=solar_system(positions2, p2)
     for planet in planets:
         v2[planet]=a2[planet]
@@ -63,6 +71,7 @@ def RK4_solar():
     #K3
     for planet in planets:
         p3[planet]=velocities[planet] + v2[planet]*(dt/2)
+    planets["rocket"]["Engine_acceleration"]=a_eng_mag*eng_scale(0.5)
     a3=solar_system(positions3, p3)
     for planet in planets:
         v3[planet]=a3[planet]
@@ -74,6 +83,7 @@ def RK4_solar():
     #k4
     for planet in planets:   
         p4[planet]=velocities[planet]+ v3[planet]*(dt)
+    planets["rocket"]["Engine_acceleration"]=a_eng_mag*eng_scale(1)
     a4=solar_system(positions4, p4)
     for planet in planets: 
         v4[planet]=a4[planet]
@@ -84,6 +94,7 @@ def RK4_solar():
     for planet in planets:
         pos_final[planet]=positions[planet]+(p1[planet]+2*p2[planet]+2*p3[planet]+p4[planet])*(dt/6)
         v_final[planet]=velocities[planet]+(v1[planet]+2*v2[planet]+2*v3[planet]+v4[planet])*(dt/6)
+    planets["rocket"]["Engine_acceleration"]=a_eng_mag   # put the start-of-step value back
     planets["rocket"]["velocity"]=v_final["rocket"]        
     return pos_final, v_final
 def animate(position_list, burn_flags=None, max_points=1500):

@@ -45,15 +45,17 @@ def crash(position):
     return False
 
 def fuel_burner(m_d, m_w, mp, F_eng_mag):
-    dt=1/inp.updates_per_second
-    m_w-=mp*dt
-    m=m_d+m_w
-    if m_w<0:
+    factor=min(1, m_w/(mp*dt))
+    burned=max(0, min(m_w, mp*dt))
+    planets["rocket"]["mass_loss"]=burned
+    if m_w<=0:
         a_eng_mag=0
         m=m_d
         empty=True
     else:
-        a_eng_mag=F_eng_mag/(m+mp*dt)
+        m_w-=burned
+        m=m_d+m_w
+        a_eng_mag=factor*F_eng_mag/(m+burned)
         """here +mp is used as the acceleration is calculated
         before fuel is spent. You cannot burn fuel then calculate acceleration
         for mass whole fuel was already burnt."""
