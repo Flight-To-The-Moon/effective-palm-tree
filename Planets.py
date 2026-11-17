@@ -19,7 +19,8 @@ planets = {
         "position": np.array([0.0, 0.0, 0.0]),
         "radius": 24.0, #random value, not important
         "Engine_acceleration": 0,
-        "mass_loss": 0
+        "mass_loss": 0,
+        "burn_count": 0
     },
 
     "sun": {

@@ -24,7 +24,7 @@ dt=1/inp.updates_per_second
 m=inp.m_d+inp.m_w
 m_var=m
 m_w=inp.m_w
-burn_end=0
+burn_count=planets["rocket"]["burn_count"]
 #formulas to claculate stuff:
 V=Vt_Vector+Vr_Vector + planets[inp.planet]["velocity"]#Velocity vector
 planets["rocket"]["velocity"]=V
@@ -50,14 +50,17 @@ else:
             crashed=True
             break
         burning= False
-        
-        if time>=inp.burn_time:
-            m_var, a_eng_mag,m_w, empty=Physics.fuel_burner(inp.m_d, m_w, inp.mp, inp.F_eng_mag)
-            planets["rocket"]["mass"]=m_var
-            planets["rocket"]["Engine_acceleration"]=a_eng_mag
-            burning= not empty
-            if burning:
-                burn_end=time+dt
+        planets["rocket"]["Engine_acceleration"]= 0
+        planets["rocket"]["mass_loss"]= 0
+        if burn_count<len(inp.burn_end_list):
+            if inp.burn_list[burn_count]<= time< inp.burn_end_list[burn_count]:
+                m_var, a_eng_mag,m_w, empty=Physics.fuel_burner(inp.m_d, m_w, inp.mp, inp.F_eng_mag)
+                planets["rocket"]["mass"]=m_var
+                planets["rocket"]["Engine_acceleration"]=a_eng_mag
+                burning= not empty
+            elif time>inp.burn_end_list[burn_count]:
+                burn_count+=1
+                planets["rocket"]["burn_count"]=burn_count
         Pos_list,V_list=orb.RK4_solar()
         Pos1=Pos_list["rocket"]
         V1=V_list["rocket"]
@@ -74,8 +77,8 @@ if crashed:
     print("Rocket crashed at:", Pos1, "after time", time)
     orb.animate(plot_list, burn_flags)
 else:
-    Pos1=Pos1-Pos_list[inp.planet]
-    V1=V1-V_list[inp.planet]
+    Pos1=Pos1-Pos_list[inp.target_planet]
+    V1=V1-V_list[inp.target_planet]
     r_updated=np.linalg.norm(Pos1) #final radius    
     #Velocity Magnitude and angles    
     MagV1=np.linalg.norm(V1)
@@ -91,20 +94,18 @@ else:
     h=np.cross(Pos1, V1)
     magh=np.linalg.norm(h)
     L=m_var*magh #angular momentum
-    u=Physics.G*(planets[inp.planet]["mass"])
+    u=Physics.G*(planets[inp.target_planet]["mass"])
     e=(MagV1**2)/2 + (-u)/r_updated
     ecc=(1+(2*e*(magh**2))/(u**2))**0.5
     Vc=((u)/r_updated)**0.5
     Vesc= (2*(u/r_updated))**0.5
     #Fuel and burn timings
     fuel_spent=m -m_var
-    burn_duration=burn_end-inp.burn_time
     #Outputs
     print("gravity:", g)
     print("Final Velocity of rocket is:", MagV1)
     print("Final Velocity of rocket is (vector):", V1)
-    print("Fuel spent:", fuel_spent)
-    print("Burn duration:", burn_duration)
+    print("Total fuel spent:", fuel_spent)
     print("Angular Momentum of rocket is:", L)
     print("Linear Momentum of Rocket is:", P)
     print("New Position after time", inp.t,":", Pos1, "corresponding to angle:", Angle_Pos)
@@ -114,7 +115,7 @@ else:
     print("Circular velocity is:", Vc)
     print("Escape Velocity is:", Vesc)
     print("Eccentricity is:", ecc)
-    print("Distance from", inp.planet, "is", r_updated)
+    print("Distance from", inp.target_planet, "is", r_updated)
 
     #Determining type of orbit
     if ecc==0:
@@ -134,7 +135,7 @@ else:
     
     #checking orbit stability
     if e<0:
-        print("Rocket is bound to", inp.planet)
+        print("Rocket is bound to", inp.target_planet,".")
     elif e==0:
         print("Rocket is in parabolic escape trajectory.")
     else:

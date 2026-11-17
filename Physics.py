@@ -18,16 +18,23 @@ def engine_acc(position, velocity):
     a_eng_mag=planets["rocket"]["Engine_acceleration"]
     if a_eng_mag==0:
         return np.zeros(3)
-    planet=inp.burn_body
-    rel_pos = position["rocket"] - position[planet]
-    rel_vel = velocity["rocket"] - velocity[planet]
-    r_dir = rel_pos / np.linalg.norm(rel_pos)
-    tangent = rel_vel - np.dot(rel_vel, r_dir) * r_dir
-    n = np.linalg.norm(tangent)
-    nr = np.linalg.norm(rel_vel)
-    if n == 0:
-        return np.zeros(3)
-    return inp.burn_dir * a_eng_mag * rel_vel / nr
+    burn_count=planets["rocket"]["burn_count"]
+    planet=inp.burn_body_list[burn_count]
+    #prograde/retrograde burn
+    if planet=="rocket":
+        v_dir=velocity/np.linalg.norm(velocity)
+        return v_dir*a_eng_mag*inp.burn_dir_list[burn_count]
+    #burn relative to planet
+    else:
+        rel_pos = position["rocket"] - position[planet]
+        rel_vel = velocity["rocket"] - velocity[planet]
+        r_dir = rel_pos / np.linalg.norm(rel_pos)
+        tangent = rel_vel - np.dot(rel_vel, r_dir) * r_dir
+        n = np.linalg.norm(tangent)
+        nr = np.linalg.norm(rel_vel)
+        if n == 0:
+            return np.zeros(3)
+        return inp.burn_dir_list[burn_count]* a_eng_mag * rel_vel / nr
     
 #function to check for crashes
 def crash(position):
