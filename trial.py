@@ -3,6 +3,7 @@ import Orbit_Map as orb
 import Physics
 from Planets import planets
 import Inputs as inp
+
 #initial vectors as given by input
 Pos_list={}
 for planet in planets:
@@ -14,9 +15,11 @@ Vt_Vector=np.array([-rel_Pos[1]/np.linalg.norm(rel_Pos), rel_Pos[0]/np.linalg.no
 Vr_Vector=np.array([rel_Pos[0]/np.linalg.norm(rel_Pos), rel_Pos[1]/np.linalg.norm(rel_Pos), 0])
 Vt_Vector*=inp.Vt
 Vr_Vector*=inp.Vr
+
 # known constant values for formulas
 crashed=False
 burn_flags = []
+plot_list={planet: [] for planet in planets}
 x=[]
 y=[]
 time=0
@@ -25,6 +28,7 @@ m=inp.m_d+inp.m_w
 m_var=m
 m_w=inp.m_w
 burn_count=planets["rocket"]["burn_count"]
+
 #formulas to claculate stuff:
 V=Vt_Vector+Vr_Vector + planets[inp.planet]["velocity"]#Velocity vector
 planets["rocket"]["velocity"]=V
@@ -58,7 +62,7 @@ else:
                 planets["rocket"]["mass"]=m_var
                 planets["rocket"]["Engine_acceleration"]=a_eng_mag
                 burning= not empty
-            elif time>inp.burn_end_list[burn_count]:
+            elif time>=inp.burn_end_list[burn_count]:
                 burn_count+=1
                 planets["rocket"]["burn_count"]=burn_count
         Pos_list,V_list=orb.RK4_solar()
@@ -79,7 +83,8 @@ if crashed:
 else:
     Pos1=Pos1-Pos_list[inp.target_planet]
     V1=V1-V_list[inp.target_planet]
-    r_updated=np.linalg.norm(Pos1) #final radius    
+    r_updated=np.linalg.norm(Pos1) #final radius
+    
     #Velocity Magnitude and angles    
     MagV1=np.linalg.norm(V1)
     Angle_rad=np.arctan2(V1[1],V1[0])
@@ -99,8 +104,10 @@ else:
     ecc=(1+(2*e*(magh**2))/(u**2))**0.5
     Vc=((u)/r_updated)**0.5
     Vesc= (2*(u/r_updated))**0.5
+    
     #Fuel and burn timings
     fuel_spent=m -m_var
+    
     #Outputs
     print("gravity:", g)
     print("Final Velocity of rocket is:", MagV1)
@@ -135,7 +142,7 @@ else:
     
     #checking orbit stability
     if e<0:
-        print("Rocket is bound to", inp.target_planet,".")
+        print("Rocket is bound to", inp.target_planet +".")
     elif e==0:
         print("Rocket is in parabolic escape trajectory.")
     else:

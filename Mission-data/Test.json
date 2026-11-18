@@ -1,0 +1,18 @@
+{
+    "planet": "earth",
+    "target_planet": "earth",
+    "m_d": 1000.0,
+    "m_w": 0.0,
+    "mp": 10.0,
+    "Vt": 7000.0,
+    "Vr": 0.0,
+    "F_eng_mag": 0.0,
+    "t": 10000.0,
+    "updates_per_second": 1.0,
+    "xPos": 7000000.0,
+    "yPos": 0.0,
+    "burn_list": [],
+    "burn_dir_list": [],
+    "burn_body_list": [],
+    "burn_end_list": []
+}

@@ -3,6 +3,7 @@ from Planets import planets
 import Inputs as inp
 G=6.674*(10**(-11))
 dt=1/inp.updates_per_second
+
 #gravity function
 def acc(position1, position2, planet, planet2):       
     position=position2-position1
@@ -13,6 +14,7 @@ def acc(position1, position2, planet, planet2):
     a1=(G*M2/(r_mag**2))*g_dir
     a2=(-G*M1/(r_mag**2))*g_dir
     return a1, a2
+
 #Engine burn calculation
 def engine_acc(position, velocity):
     a_eng_mag=planets["rocket"]["Engine_acceleration"]
@@ -20,10 +22,16 @@ def engine_acc(position, velocity):
         return np.zeros(3)
     burn_count=planets["rocket"]["burn_count"]
     planet=inp.burn_body_list[burn_count]
+    
     #prograde/retrograde burn
     if planet=="rocket":
-        v_dir=velocity/np.linalg.norm(velocity)
-        return v_dir*a_eng_mag*inp.burn_dir_list[burn_count]
+        speed=np.linalg.norm(velocity)
+        if speed==0:
+            return np.zeros(3)
+        else:
+            v_dir=velocity/speed
+            return v_dir*a_eng_mag*inp.burn_dir_list[burn_count]
+        
     #burn relative to planet
     else:
         rel_pos = position["rocket"] - position[planet]
@@ -31,10 +39,9 @@ def engine_acc(position, velocity):
         r_dir = rel_pos / np.linalg.norm(rel_pos)
         tangent = rel_vel - np.dot(rel_vel, r_dir) * r_dir
         n = np.linalg.norm(tangent)
-        nr = np.linalg.norm(rel_vel)
         if n == 0:
             return np.zeros(3)
-        return inp.burn_dir_list[burn_count]* a_eng_mag * rel_vel / nr
+        return inp.burn_dir_list[burn_count]* a_eng_mag * tangent / n
     
 #function to check for crashes
 def crash(position):
@@ -51,6 +58,7 @@ def crash(position):
 
     return False
 
+#fuel consumption calculation
 def fuel_burner(m_d, m_w, mp, F_eng_mag):
     factor=min(1, m_w/(mp*dt))
     burned=max(0, min(m_w, mp*dt))
